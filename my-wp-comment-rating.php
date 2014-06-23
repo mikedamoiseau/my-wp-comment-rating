@@ -6,7 +6,7 @@
  * Version:           0.1.0
  * Author:            Mike Damoiseau
  * Author URI:        http://damoiseau.me
- * Text Domain:       mywpcomnmentrating
+ * Text Domain:       mywpcommentrating
  * License:           GPL-2.0+
  * License URI:       http://www.gnu.org/licenses/gpl-2.0.txt
  * Domain Path:       /languages
@@ -57,7 +57,7 @@ class My_WP_Comment_Rating {
 
     public static function comment_form_after_fields() {
       echo '<p class="comment-form-rating">'.
-      '<label for="rating">'. __( 'Rating', 'mywpcomnmentrating' ) . '<span class="required">*</span></label>
+      '<label for="rating">'. __( 'Rating', 'mywpcommentrating' ) . '<span class="required">*</span></label>
       <span class="commentratingbox">';
 
         //Current rating scale is 1 to 5. If you want the scale to be 1 to 10, then set the value of $i to 10.
@@ -109,7 +109,7 @@ class My_WP_Comment_Rating {
     public static function add_meta_boxes_comment() {
       add_meta_box(
         'mywpd_rating',
-        __( 'Rating', 'mywpcomnmentrating' ),
+        __( 'Rating', 'mywpcommentrating' ),
         array( __CLASS__, 'extend_comment_meta_box' ),
         'comment',
         'normal',
@@ -189,7 +189,7 @@ class My_WP_Comment_Rating {
       global $post;
 
       extract( shortcode_atts( array(
-            'label' => __( 'Post rating: ', 'mywpcomnmentrating' ),
+            'label' => __( 'Post rating: ', 'mywpcommentrating' ),
         ), $atts ) );
 
         $text = self::__display_stars( $post->ID );
