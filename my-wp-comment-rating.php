@@ -15,10 +15,12 @@
  *
  */
 
+// Make sure we are in a Wordpress environment
 if ( ! defined( 'WPINC' ) ) {
     die('asdfasdasd');
 }
 
+// Some contants that are useful when developing a plugin
 if ( ! defined( 'RC_TC_BASE_FILE' ) ) {
     define( 'RC_TC_BASE_FILE', __FILE__ );
 }
@@ -32,29 +34,44 @@ if ( ! defined( 'RC_TC_PLUGIN_PATH' ) ) {
     define( 'RC_TC_PLUGIN_PATH', untrailingslashit( plugin_dir_path( __FILE__ ) ) );
 }
 
+/**
+ * The plugin code will be stored in a class called `My_WP_Comment_Rating` to avoid conflicts with functions from Wordpress/themes/plugins
+ */
 class My_WP_Comment_Rating {
+    /**
+     * 5 stars, yup hardcoded...
+     * @var integer
+     */
     private static $__maxRate = 5;
 
+    /**
+     * Constructor, this is where we will add our filters/actions
+     */
     public function __construct() {
+        // display the fields in the comment form
         add_action( 'comment_form_logged_in_after', array( __CLASS__, 'comment_form_after_fields' ) );
         add_action( 'comment_form_after_fields', array( __CLASS__, 'comment_form_after_fields' ) );
 
-        // save the data
+        // save the data when a comment is sumbitted
         add_action( 'comment_post', array( __CLASS__, 'comment_post' ) );
 
-        // Add the comment meta (saved earlier) to the comment text
+        // add the comment meta (saved earlier) to the comment text
         add_filter( 'comment_text', array( __CLASS__, 'comment_text' ) );
 
-        // Add an edit option to comment editing screen
+        // add an edit option to comment editing screen
         add_action( 'add_meta_boxes_comment', array( __CLASS__, 'add_meta_boxes_comment' ) );
 
-        // Update comment meta data from comment editing screen
+        // update comment meta data from comment editing screen
         add_action( 'edit_comment', array( __CLASS__, 'edit_comment' ) );
 
-        // the shortcodes
-        self::add_shortcodes();
+        // the shortcode to display the rating of the post
+        add_shortcode( 'my-wp-comment-rating', array( __CLASS__, 'shortcode_rating' ) );
+
     } // __construct
 
+    /**
+     * This funciton will add the rating fields to the comment form
+     */
     public static function comment_form_after_fields() {
       echo '<p class="comment-form-rating">'.
       '<label for="rating">'. __( 'Rating', 'mywpcommentrating' ) . '<span class="required">*</span></label>
@@ -68,6 +85,10 @@ class My_WP_Comment_Rating {
       echo'</span></p>';
     } // comment_form_after_fields
 
+    /**
+     * Saves the rating value (attaches it to the comment) and recalculate the total rating of the post
+     * @param  int $comment_id ID of the comment
+     */
     public static function comment_post( $comment_id ) {
         if ( ( isset( $_POST['mywpd_rating'] ) ) && ( $_POST['mywpd_rating'] != '') ) {
           // save the rating of this comment
@@ -92,6 +113,11 @@ class My_WP_Comment_Rating {
         }
     } // comment_post
 
+    /**
+     * Displays the rating next to the comment
+     * @param  string $text Text of the comment
+     * @return string       the new text of the comment
+     */
     public static function comment_text( $text ) {
       $plugin_url_path = RC_TC_PLUGIN_URL;
 
@@ -106,6 +132,9 @@ class My_WP_Comment_Rating {
       return $text;
     } // comment_text
 
+    /**
+     * Adds a meta box on the comment editing page
+     */
     public static function add_meta_boxes_comment() {
       add_meta_box(
         'mywpd_rating',
@@ -117,6 +146,10 @@ class My_WP_Comment_Rating {
       );
     } // add_meta_boxes_comment
 
+    /**
+     * Callback function for `add_meta_boxes_comment`, displays the rating fields in the comment editing page
+     * @param  [object] $comment Comment object
+     */
     public static function extend_comment_meta_box( $comment ) {
       $rating = get_comment_meta( $comment->comment_ID, 'mywpd_rating', true );
       wp_nonce_field( 'extend_comment_update', 'extend_comment_update', false );
@@ -135,15 +168,18 @@ class My_WP_Comment_Rating {
       <?php
     } // extend_comment_meta_box
 
+    /**
+     * Saves the new rating value when updating a comment, and recalculate the post total rating
+     * @param  int $comment_id ID of the comment
+     */
     public static function edit_comment( $comment_id ) {
-      if( ! isset( $_POST['extend_comment_update'] ) || !wp_verify_nonce( $_POST['extend_comment_update'], 'extend_comment_update' ) ) {
+      if( !isset( $_POST['extend_comment_update'] ) || !wp_verify_nonce( $_POST['extend_comment_update'], 'extend_comment_update' ) ) {
         return;
       }
 
       if ( ( isset( $_POST['mywpd_rating'] ) ) && ( $_POST['mywpd_rating'] != '') ) {
         $comment = get_comment( $comment_id, ARRAY_A );
         $rating_previous = get_comment_meta( $comment_id, 'mywpd_rating', true );
-
 
         $rating = wp_filter_nohtml_kses($_POST['mywpd_rating']);
         update_comment_meta( $comment_id, 'mywpd_rating', $rating );
@@ -165,10 +201,11 @@ class My_WP_Comment_Rating {
       }
     } // edit_comment
 
-    public static function add_shortcodes() {
-        add_shortcode( 'my-wp-comment-rating', array( __CLASS__, 'shortcode_rating' ) );
-    } // add_shortcodes
-
+    /**
+     * Private function called by the function `shortcode_rating`.
+     * @param  int $post_id ID of the post
+     * @return string          The stars code
+     */
     private static function __display_stars( $post_id ) {
         $rating_total = ( int )get_post_meta( $post_id, 'mywpd_rating_place', true );
         $rating_count = ( int )get_post_meta( $post_id, 'mywpd_rating_place_count', true );
@@ -185,6 +222,11 @@ class My_WP_Comment_Rating {
         return $text;
     }
 
+    /**
+     * Callback function for adding the shortcode that will display the total rating of the current post
+     * @param  array $atts array of arguments given to the shortcode
+     * @return string       The stars code
+     */
     public static function shortcode_rating( $atts ) {
       global $post;
 
@@ -202,7 +244,9 @@ class My_WP_Comment_Rating {
 
 } // My_WP_Comment_Rating
 
-// Instanciate the plugin
+/**
+ * Instanciate our plugin
+ */
 new My_WP_Comment_Rating();
 
  ?>
